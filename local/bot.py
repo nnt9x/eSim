@@ -1,6 +1,6 @@
 import requests
 import json
-
+import time
 
 class LocalBase:
     headers = {
@@ -19,7 +19,6 @@ class LocalBase:
         self.username = username
         self.password = password
         self.appcode = appcode
-
 
 class LocalBotAuto(LocalBase):
     # Thuộc tính
@@ -75,9 +74,6 @@ class LocalBotAuto(LocalBase):
             data = response.json()
             self.serial_number = data["data"]["serialNumber"]
             self.phone_number = data["data"]["phoneNumber"]
-            # Thêm số 0 đầu số nếu không có
-            if self.phone_number[0] != "0":
-                self.phone_number = "0" + self.phone_number
             self.sim_type = data["data"]["simType"]
             self.mbf_code = data["data"]["mbfCode"]
             self.distributor_id = data["data"]["distributorId"]
@@ -121,19 +117,13 @@ class LocalBotAuto(LocalBase):
     def auto_activate(self, serial_number):
         self.__login()
         self.__get_sim_info(serial_number)
-        print("Lấy thông tin sim")
         print(
             self.phone_number, self.serial_number, self.mbf_code, self.distributor_name
         )
-        # self._activate_sim()
-        # order = self.getOrder(serial_number, self.order_id)
-        # return order["phoneNumber"], order["serial"], order["linkQrText"]
+        self.__activate_sim()
+        time.sleep(3)
+        order = self.getOrder(serial_number, self.order_id)
+        # order = self.getOrder("8401231212200859", "DN1090056-DN1735633748") # eSim
+        # order = self.getOrder("8401240512602267", "DN1090056-DN1735727172") # VL
+        return (order["phoneNumber"], order["serial"], order["linkQrText"])
 
-
-# if __name__ == "__main__":
-
-#     bot = LocalBotAuto(username="0981989069", password="Asim@2023")
-#     bot.auto_activate("8401240512602095")
-#     # bot._login()
-#     # order = bot.getOrder("8401231212200859", "DN1090056-DN1735633748")
-#     # print(order["phoneNumber"], order["serial"], order["linkQrText"])
