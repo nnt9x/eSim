@@ -1,9 +1,11 @@
 import pandas as pd
-import sqlite3
 import os
 
 
 class DataLoader:
+    """
+    Lấy dữ liệu esim và profiles
+    """
     def sim_data(self, path="data/excel/sim.xlsx") -> pd.DataFrame:
         return pd.read_excel(path, dtype=str)
 

@@ -46,7 +46,6 @@ class GmailProcessor:
                             "from": email_address,
                             "date": date_,
                         })
-                        print(f"Email added to queue: {subject}")
             mail.close()
             mail.logout()
         except Exception as e:
@@ -107,10 +106,9 @@ class GmailProcessor:
                         continue
 
                     phone,serial = tmp
-                    # Call the handle_email function
-                    handle_email(email_data,phone, serial)
-
-                    # Task done
+                    # Callable: có thẻ pass 1 hàm xử lý email
+                    handle_email(email_data, phone, serial)
+                    # Hoàn thành tác vụ
                     self.email_queue.task_done()
                 else:
                     break
@@ -118,14 +116,13 @@ class GmailProcessor:
                 print(f"Lỗi khi xử lý email: {e}")
 
     def loop_forever(self, handle_email, time_sleep=15):
-        """Run the email reading and processing sequentially."""
         while True:
             if self.email_queue.empty():
-                print("Checking for new emails...")
+                print("Kiểm tra email...")
                 self.read_email()
             if not self.email_queue.empty():
-                print("Processing emails in the queue...")
+                print("Xử lý email và kích hoạt sim...")
                 self.process_email(handle_email)
-            time.sleep(time_sleep)  # Check email every 5 seconds
+            time.sleep(time_sleep) 
 
 

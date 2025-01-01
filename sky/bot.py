@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 class AutoBase:
-    def __init__(self, wait_timeout=30):
+    def __init__(self, wait_timeout=60):
         options = webdriver.FirefoxOptions()
         options.set_preference("dom.webnotifications.enabled", True)
         options.set_preference("dom.popup_allowed_events", "click dblclick mousedown mouseup")
