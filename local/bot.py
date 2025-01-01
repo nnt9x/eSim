@@ -123,7 +123,5 @@ class LocalBotAuto(LocalBase):
         self.__activate_sim()
         time.sleep(3)
         order = self.getOrder(serial_number, self.order_id)
-        # order = self.getOrder("8401231212200859", "DN1090056-DN1735633748") # eSim
-        # order = self.getOrder("8401240512602267", "DN1090056-DN1735727172") # VL
         return (order["phoneNumber"], order["serial"], order["linkQrText"])
 
