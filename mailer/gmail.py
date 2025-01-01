@@ -7,12 +7,14 @@ from email.message import EmailMessage
 from queue import Queue
 import re
 
+
 class GmailProcessor:
-    def __init__(self, mail:str, password:str, imap_server="imap.gmail.com"):
+    def __init__(self, mail: str, password: str, imap_server="imap.gmail.com"):
         self.EMAIL = mail
         self.PASSWORD = password
         self.IMAP_SERVER = imap_server
-        self.email_queue = Queue() # Hàng đợi chứa email
+        # Hàng đợi chứa email
+        self.email_queue = Queue() 
 
     def read_email(self):
         """Đọc email từ inbox và thêm vào hàng đợi."""
@@ -22,7 +24,7 @@ class GmailProcessor:
             mail.select("inbox")
 
             # Tìm các email chưa đọc
-            status, messages = mail.search(None, 'UNSEEN')
+            status, messages = mail.search(None, "UNSEEN")
             email_ids = messages[0].split()
 
             for email_id in email_ids:
@@ -38,14 +40,16 @@ class GmailProcessor:
                         date_ = msg.get("Date")
 
                         # Extract email address using regex
-                        email_address = re.search(r'<(.+?)>', from_).group(1)
+                        email_address = re.search(r"<(.+?)>", from_).group(1)
 
-                       # Đưa email vào hàng đợi
-                        self.email_queue.put({
-                            "subject": subject,
-                            "from": email_address,
-                            "date": date_,
-                        })
+                        # Đưa email vào hàng đợi
+                        self.email_queue.put(
+                            {
+                                "subject": subject,
+                                "from": email_address,
+                                "date": date_,
+                            }
+                        )
             mail.close()
             mail.logout()
         except Exception as e:
@@ -99,13 +103,13 @@ class GmailProcessor:
                     print(f"Date: {email_data['date']}")
                     print("------------------------")
 
-                    tmp = email_data['subject'].split("-")
+                    tmp = email_data["subject"].split("-")
                     if len(tmp) != 2:
                         print("Email không đúng định dạng")
                         self.email_queue.task_done()
                         continue
 
-                    phone,serial = tmp
+                    phone, serial = tmp
                     # Callable: có thẻ pass 1 hàm xử lý email
                     handle_email(email_data, phone, serial)
                     # Hoàn thành tác vụ
@@ -123,6 +127,4 @@ class GmailProcessor:
             if not self.email_queue.empty():
                 print("Xử lý email và kích hoạt sim...")
                 self.process_email(handle_email)
-            time.sleep(time_sleep) 
-
-
+            time.sleep(time_sleep)
