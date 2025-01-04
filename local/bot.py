@@ -1,6 +1,5 @@
 import requests
 import json
-import time
 
 class LocalBase:
     headers = {
@@ -121,7 +120,6 @@ class LocalBotAuto(LocalBase):
             self.phone_number, self.serial_number, self.mbf_code, self.distributor_name
         )
         self.__activate_sim()
-        time.sleep(3)
         order = self.getOrder(serial_number, self.order_id)
         return order["phoneNumber"], order["serial"], order["linkQrText"]
 
