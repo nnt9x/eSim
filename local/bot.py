@@ -70,7 +70,7 @@ class LocalBotAuto(LocalBase):
         if response.status_code != 200:
             raise Exception("Sim đã kích hoạt hoặc số serial không đúng!")
 
-        if response.json()["isSucceeded"] == True:
+        if response.json()["isSucceeded"]:
             data = response.json()
             self.serial_number = data["data"]["serialNumber"]
             self.phone_number = data["data"]["phoneNumber"]
@@ -123,5 +123,5 @@ class LocalBotAuto(LocalBase):
         self.__activate_sim()
         time.sleep(3)
         order = self.getOrder(serial_number, self.order_id)
-        return (order["phoneNumber"], order["serial"], order["linkQrText"])
+        return order["phoneNumber"], order["serial"], order["linkQrText"]
 
