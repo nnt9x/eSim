@@ -9,7 +9,6 @@ def create_text_image(text, font_path=r'font\ArtySignature.otf', image_size=(300
 
     # Get the absolute path to the font file
     font_path = os.path.join(os.path.dirname(__file__), font_path)
-    print(font_path)
     font = ImageFont.truetype(font_path, font_size)
 
     # Remove diacritics from the text

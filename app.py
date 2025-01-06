@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from data.data import DataLoader
 from local.bot import LocalBotAuto
 from mailer.gmail import GmailProcessor
-from vnsky.bot import VNSKYBot
+from vnsky.bot import VNSKYBot, CCCDException, SimCardException
 
 if __name__ == "__main__":
     # LOAD ENV
@@ -16,34 +16,25 @@ if __name__ == "__main__":
     # EMAIL PROCESSOR
     email_processor = GmailProcessor(mail=os.getenv("EMAIL"), password=os.getenv("PASSWORD"))
 
-    # INIT LOCALBOT AUTO
-    local_bot = LocalBotAuto(
-        os.getenv("LOCAL_USER"),
-        os.getenv("LOCAL_PASSWORD")
-    )
-    # INIT VNSKYBOT AUTO
-    vnsky_bot = VNSKYBot(
-        os.getenv("SKY_EMAIL"),
-        os.getenv("SKY_PASSWORD")
-    )
 
     # HANDLE EMAIL
-    def handle_email(email_data, phone:str, serial:str):
+    def handle_email(email_data, phone: str, serial: str):
         try:
-            # Tải dữ liệu mới nhất từ excel
+            # TẢI DỮ LIỆU
             data_loader = DataLoader()
             df = data_loader.sim_data()
 
-            # In thời gian hiện tại
+            # LẤY THÔNG TIN SỐ ĐIỆN THOẠI VÀ SERIAL CẦN KÍCH HOẠT
             print(f"Kích hoạt sim - số điện thoại: {phone}, số serial: {serial}")
 
-            # KIỂM TRA SỐ LƯỢNG THÔNG TIN SIM
+            # KIỂM TRA SỐ LƯỢNG SIM TRONG EXCEL
             not_activated = df[df["Trạng thái kích hoạt"].isna()]
             print(f"Số lượng sim chưa kích hoạt: {len(not_activated)}")
 
             if not_activated.size < 10:
                 msg = "[Thông báo] Số lượng sim chưa kích hoạt còn lại " + str(not_activated);
-                email_processor.send_email(os.getenv("ADMIN_MAIL"), msg.upper(),"")
+                email_processor.send_email(os.getenv("ADMIN_MAIL"), msg.upper(), "")
+            # KIỂM TRA SỐ LƯỢNG SIM TRONG EXCEL
 
             # KIỂM TRA SỐ LƯỢNG HỒ SƠ
             count_profiles = data_loader.get_count_profiles()
@@ -56,12 +47,13 @@ if __name__ == "__main__":
                 return
 
             elif count_profiles < 10:
-                msg =  "Số lượng hồ sơ còn lại " + str(count_profiles);
-                email_processor.send_email(
-                    os.getenv("ADMIN_MAIL"), msg.upper(),""
-                )
+                msg = "Số lượng hồ sơ còn lại " + str(count_profiles);
+                # email_processor.send_email(
+                #     os.getenv("ADMIN_MAIL"), msg.upper(),""
+                # )
+            # KIỂM TRA SỐ LƯỢNG HỒ SƠ
 
-            # LẤY THÔNG TIN SỐ ĐIỆN THOẠI
+            # LẤY THÔNG TIN SỐ ĐIỆN THOẠI TRONG EXCEL
             sim = df[(df["Số điện thoại"] == phone) & (df["Serial sim"] == serial)]
 
             # Nếu không tìm thấy sim
@@ -114,47 +106,74 @@ if __name__ == "__main__":
                         os.getenv("ADMIN_MAIL"), "XỬ LÝ LỖI KÍCH HOẠT SIM LOCAL", body_
                     )
 
-            else:
+            elif(str(sim.iloc[0]['Nhà mạng']).upper() == "VNSKY"):
                 print("KÍCH HOẠT CHO NHÀ MẠNG VNSKY")
-                # KICH HOAT VOI VNSKY
-                profile = data_loader.get_first_profiles()
-                os.chmod(profile[0], 0o777)
-                # Kích hoạt sim
-                counter = 2
-                # Gửi hồ sơ
-                result = False
-                while counter > 0:
-                    result = vnsky_bot.activate_subscription(
-                        phone, serial, profile[1], profile[2], profile[3]
-                    )
-                    if result:
-                        email_processor.reply_email(email_data, "Kích hoạt sim thành công!")
-                        shutil.move(profile[0], "../data/profiles_done")
-                        # Lưu thông tin hồ sơ
-                        df.loc[sim.index, "Trạng thái kích hoạt"] = "Đã kích hoạt"
-                        df.loc[sim.index, "Mail gửi kích hoạt"] = email_data["from"]
-                        df.loc[sim.index, "Thời gian gửi"] = email_data["date"]
-                        # Thời gian hiện tại d/m/y h:m:s
-                        df.loc[sim.index, "Thời gian kích hoạt"] = (
-                            pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
-                        )
-                        # Lưu dữ liệu
-                        df.to_excel("data/excel/sim.xlsx", index=False)
-                        break
-                    counter = counter - 1
-
-                    if counter == 1:
-                        # Hai lần kích hoạt trước lỗi -> đổi hình
+                vnsky_bot = VNSKYBot(
+                    os.getenv("SKY_EMAIL"),
+                    os.getenv("SKY_PASSWORD")
+                )
+                try:
+                    print("1. Đăng nhập")
+                    vnsky_bot.login()
+                    print("2. Check sim")
+                    sim_card = vnsky_bot.check_sim(phone, serial)
+                    print(sim_card.serial, sim_card.isdn)
+                    print("3. Kiểm tra ảnh")
+                    count = 10
+                    profile = None
+                    while(count > 0):
+                        try:
+                            profile = data_loader.get_first_profiles()
+                            print(profile[0])
+                            os.chmod(profile[0], 0o777)
+                            cccd = vnsky_bot.check_card_cccd(profile[1], profile[2], profile[3])
+                            break
+                        except CCCDException as e:
+                            count -= 1
+                            print("Ảnh không hợp lệ, thử bộ hồ sơ khác", e)
+                            os.chmod(profile[0], 0o777)
+                            shutil.move(profile[0], "../data/profiles_failed")
+                    else:
+                        # Email cho admin
                         shutil.move(profile[0], "../data/profiles_failed")
-                        profile = data_loader.get_first_profiles()
-                        os.chmod(profile[0], 0o777)
-                else:
-                    body_ = f"""
-                    Số điện thoại: {phone} và serial: {serial}"""
-                    email_processor.send_email(
-                        os.getenv("ADMIN_MAIL"), "XỬ LÝ LỖI KÍCH HOẠT SIM VNSKY", body_
+
+                    print("4. Tạo mã khách hàng")
+                    customer_no = vnsky_bot.gen_customer_no(cccd)
+                    print(customer_no.customerCode)
+                    print("5. Tạo mã hợp đồng")
+                    contract_no = vnsky_bot.get_contactno(cccd)
+                    print(contract_no.contractNo)
+                    print("6. Tạo hợp đồng")
+                    vnsky_bot.gen_contract(cccd, customer_no, contract_no, sim_card)
+                    print("7. Kí hợp đồng")
+                    vnsky_bot.create_signature(cccd=cccd, contract_no=contract_no)
+                    print("8. Kích hoạt sim")
+                    vnsky_bot.active_contract(
+                        card_front=profile[1],
+                        card_back=profile[2],
+                        portrait=profile[3],
+                        cccd=cccd,
+                        customer_code=customer_no,
+                        contact_no=contract_no,
+                        sim_card=sim_card
+                    );
+                    email_processor.reply_email(email_data, "Kích hoạt sim thành công!")
+                    shutil.move(profile[0], "../data/profiles_done")
+                    # Lưu thông tin hồ sơ
+                    df.loc[sim.index, "Trạng thái kích hoạt"] = "Đã kích hoạt"
+                    df.loc[sim.index, "Mail gửi kích hoạt"] = email_data["from"]
+                    df.loc[sim.index, "Thời gian gửi"] = email_data["date"]
+                    # Thời gian hiện tại d/m/y h:m:s
+                    df.loc[sim.index, "Thời gian kích hoạt"] = (
+                        pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
                     )
-                    shutil.move(profile[0], "../data/profiles_failed")
+                    # Lưu dữ liệu
+                    df.to_excel("data/excel/sim.xlsx", index=False)
+
+                except SimCardException as e:
+                    email_processor.reply_email(email_data, "Sim đã kích hoạt hoặc số điện thoại, serial không đúng!")
+                except Exception as e:
+                   print(e)
 
         except Exception as e:
             print(f"Error: {e}")
