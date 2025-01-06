@@ -23,9 +23,9 @@ if __name__ == "__main__":
             # TẢI DỮ LIỆU
             data_loader = DataLoader()
             df = data_loader.sim_data()
-
+            #
             # LẤY THÔNG TIN SỐ ĐIỆN THOẠI VÀ SERIAL CẦN KÍCH HOẠT
-            print(f"Kích hoạt sim - số điện thoại: {phone}, số serial: {serial}")
+            # print(f"Kích hoạt sim - số điện thoại: {phone}, số serial: {serial}")
 
             # KIỂM TRA SỐ LƯỢNG SIM TRONG EXCEL
             not_activated = df[df["Trạng thái kích hoạt"].isna()]
@@ -48,13 +48,18 @@ if __name__ == "__main__":
 
             elif count_profiles < 10:
                 msg = "Số lượng hồ sơ còn lại " + str(count_profiles);
-                # email_processor.send_email(
-                #     os.getenv("ADMIN_MAIL"), msg.upper(),""
-                # )
+                email_processor.send_email(
+                    os.getenv("ADMIN_MAIL"), msg.upper(),""
+                )
             # KIỂM TRA SỐ LƯỢNG HỒ SƠ
-
-            # LẤY THÔNG TIN SỐ ĐIỆN THOẠI TRONG EXCEL
-            sim = df[(df["Số điện thoại"] == phone) & (df["Serial sim"] == serial)]
+            if(phone == None):
+                # Kích hoạt cho VNSKY, cần tìm bản ghi theo 6 số serial
+                sim = df[(df["Serial sim"].str.endswith(serial))]
+                print("LOCAL")
+            else:
+                # LẤY THÔNG TIN SỐ ĐIỆN THOẠI TRONG EXCEL
+                sim = df[(df["Số điện thoại"].str.endswith(phone)) & (df["Serial sim"].str.endswith(serial))]
+                print("VNSKY")
 
             # Nếu không tìm thấy sim
             if sim.empty:
@@ -62,6 +67,12 @@ if __name__ == "__main__":
                     email_data, "Số serial và điện thoại không khớp!"
                 )
                 return
+
+            # Lấy thông tin số điện thoại và serial chuẩn từ excel
+            phone = sim.iloc[0]["Số điện thoại"]
+            serial = sim.iloc[0]["Serial sim"]
+
+            print(f"Kích hoạt sim - số điện thoại: {phone}, số serial: {serial}")
 
             # Nếu sim đã kích hoạt
             if sim["Trạng thái kích hoạt"].values[0] == "Đã kích hoạt":

@@ -42,14 +42,16 @@ class GmailProcessor:
                         # Extract email address using regex
                         email_address = re.search(r"<(.+?)>", from_).group(1)
 
-                        # Đưa email vào hàng đợi
-                        self.email_queue.put(
-                            {
-                                "subject": subject,
-                                "from": email_address,
-                                "date": date_,
-                            }
-                        )
+                        # Chỉ lấy các mail có subject chứa số, gạch ngang, còn lại bỏ qua
+                        if re.match(r"^[0-9-]+$", subject):
+                            # Đưa email vào hàng đợi
+                            self.email_queue.put(
+                                {
+                                    "subject": str(subject).strip(),
+                                    "from": email_address,
+                                    "date": date_,
+                                }
+                            )
             mail.close()
             mail.logout()
         except Exception as e:
@@ -103,13 +105,18 @@ class GmailProcessor:
                     print(f"Date: {email_data['date']}")
                     print("------------------------")
 
-                    tmp = email_data["subject"].split("-")
-                    if len(tmp) != 2:
-                        print("Email không đúng định dạng")
-                        self.email_queue.task_done()
-                        continue
+                    phone = None
+                    serial = None
+                    if len(email_data["subject"]) == 6:
+                        serial = email_data["subject"]
+                    else:
+                        tmp = email_data["subject"].split("-")
+                        if len(tmp) != 2:
+                            print("Email không đúng định dạng")
+                            self.email_queue.task_done()
+                            continue
+                        phone, serial = tmp
 
-                    phone, serial = tmp
                     # Callable: có thẻ pass 1 hàm xử lý email
                     handle_email(email_data, phone, serial)
                     # Hoàn thành tác vụ
