@@ -13,8 +13,7 @@ class GmailProcessor:
         self.EMAIL = mail
         self.PASSWORD = password
         self.IMAP_SERVER = imap_server
-        # Hàng đợi chứa email
-        self.email_queue = Queue() 
+        self.email_queue = Queue()
 
     def read_email(self):
         """Đọc email từ inbox và thêm vào hàng đợi."""
@@ -43,7 +42,7 @@ class GmailProcessor:
                         email_address = re.search(r"<(.+?)>", from_).group(1)
 
                         # Chỉ lấy các mail có subject chứa số, gạch ngang, còn lại bỏ qua
-                        if re.match(r"^[0-9-]+$", subject):
+                        if re.match(r"^(vnsky|local)\d+", subject, re.IGNORECASE):
                             # Đưa email vào hàng đợi
                             self.email_queue.put(
                                 {
@@ -104,21 +103,8 @@ class GmailProcessor:
                     print(f"From: {email_data['from']}")
                     print(f"Date: {email_data['date']}")
                     print("------------------------")
-
-                    phone = None
-                    serial = None
-                    if len(email_data["subject"]) == 6:
-                        serial = email_data["subject"]
-                    else:
-                        tmp = email_data["subject"].split("-")
-                        if len(tmp) != 2:
-                            print("Email không đúng định dạng")
-                            self.email_queue.task_done()
-                            continue
-                        phone, serial = tmp
-
                     # Callable: có thẻ pass 1 hàm xử lý email
-                    handle_email(email_data, phone, serial)
+                    handle_email(email_data)
                     # Hoàn thành tác vụ
                     self.email_queue.task_done()
                 else:

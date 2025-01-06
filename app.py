@@ -8,6 +8,7 @@ from data.data import DataLoader
 from local.bot import LocalBotAuto
 from mailer.gmail import GmailProcessor
 from vnsky.bot import VNSKYBot, CCCDException, SimCardException
+import re
 
 if __name__ == "__main__":
     # LOAD ENV
@@ -17,15 +18,22 @@ if __name__ == "__main__":
     email_processor = GmailProcessor(mail=os.getenv("EMAIL"), password=os.getenv("PASSWORD"))
 
 
+    def split_string(input_str):
+        match = re.match(r"([a-zA-Z]+)(\d+)", input_str)
+        if match:
+            letters = match.group(1)
+            numbers = match.group(2)
+            return letters, numbers
+        else:
+            return None, None
+
+
     # HANDLE EMAIL
-    def handle_email(email_data, phone: str, serial: str):
+    def handle_email(email_data):
         try:
             # TẢI DỮ LIỆU
             data_loader = DataLoader()
             df = data_loader.sim_data()
-            #
-            # LẤY THÔNG TIN SỐ ĐIỆN THOẠI VÀ SERIAL CẦN KÍCH HOẠT
-            # print(f"Kích hoạt sim - số điện thoại: {phone}, số serial: {serial}")
 
             # KIỂM TRA SỐ LƯỢNG SIM TRONG EXCEL
             not_activated = df[df["Trạng thái kích hoạt"].isna()]
@@ -49,19 +57,17 @@ if __name__ == "__main__":
             elif count_profiles < 10:
                 msg = "Số lượng hồ sơ còn lại " + str(count_profiles);
                 email_processor.send_email(
-                    os.getenv("ADMIN_MAIL"), msg.upper(),""
+                    os.getenv("ADMIN_MAIL"), msg.upper(), ""
                 )
             # KIỂM TRA SỐ LƯỢNG HỒ SƠ
-            if(phone == None):
-                # Kích hoạt cho VNSKY, cần tìm bản ghi theo 6 số serial
-                sim = df[(df["Serial sim"].str.endswith(serial))]
-                print("LOCAL")
-            else:
-                # LẤY THÔNG TIN SỐ ĐIỆN THOẠI TRONG EXCEL
-                sim = df[(df["Số điện thoại"].str.endswith(phone)) & (df["Serial sim"].str.endswith(serial))]
-                print("VNSKY")
 
-            # Nếu không tìm thấy sim
+            subject = email_data["subject"]
+            # Tách phần số và chữ từ subject
+            mobile_network, serial = split_string(subject)
+            mobile_network = str(mobile_network).upper()
+
+            sim = df[(df["Nhà mạng"].str.upper().str.endswith(mobile_network)) & (df["Serial sim"].str.endswith(serial))]
+
             if sim.empty:
                 email_processor.reply_email(
                     email_data, "Số serial và điện thoại không khớp!"
@@ -117,7 +123,7 @@ if __name__ == "__main__":
                         os.getenv("ADMIN_MAIL"), "XỬ LÝ LỖI KÍCH HOẠT SIM LOCAL", body_
                     )
 
-            elif(str(sim.iloc[0]['Nhà mạng']).upper() == "VNSKY"):
+            elif (str(sim.iloc[0]['Nhà mạng']).upper() == "VNSKY"):
                 print("KÍCH HOẠT CHO NHÀ MẠNG VNSKY")
                 vnsky_bot = VNSKYBot(
                     os.getenv("SKY_EMAIL"),
@@ -132,7 +138,7 @@ if __name__ == "__main__":
                     print("3. Kiểm tra ảnh")
                     count = 10
                     profile = None
-                    while(count > 0):
+                    while (count > 0):
                         try:
                             profile = data_loader.get_first_profiles()
                             print(profile[0])
@@ -198,10 +204,11 @@ if __name__ == "__main__":
                 except SimCardException as e:
                     email_processor.reply_email(email_data, "Sim đã kích hoạt hoặc số điện thoại, serial không đúng!")
                 except Exception as e:
-                   print(e)
+                    print(e)
 
         except Exception as e:
             print(f"Error: {e}")
+
 
     # LOOP FOREVER
     email_processor.loop_forever(handle_email)
