@@ -107,22 +107,27 @@ class VNSKYBot:
     def check_card_cccd(self, card_front, card_back, portrait,
                         url="https://api-bcss-uat.vnsky.vn/customer-service/private/api/v1/activation-info?cardType=1") -> CCCD:
         payload = {'enableActiveMore3': '0'}
-        files = [
-            ('cardFront', ('1.jpg', open(card_front, 'rb'), 'image/jpeg')),
-            ('cardBack', ('2.jpg', open(card_back, 'rb'), 'image/jpeg')),
-            ('portrait', ('3.jpg', open(portrait, 'rb'), 'image/jpeg'))
-        ]
-        # Xóa content-type
-        self.__headers.pop('content-type', None)
+        files = []
+        try:
+            with open(card_front, 'rb') as f1, open(card_back, 'rb') as f2, open(portrait, 'rb') as f3:
+                files = [
+                    ('cardFront', ('1.jpg', f1, 'image/jpeg')),
+                    ('cardBack', ('2.jpg', f2, 'image/jpeg')),
+                    ('portrait', ('3.jpg', f3, 'image/jpeg'))
+                ]
+                # Xóa content-type
+                self.__headers.pop('content-type', None)
 
-        response = requests.request("POST", url, headers=self.__headers, data=payload, files=files)
-        if response.status_code != 200:
-            raise CCCDException(f"Xác thực thông tin CCCD thất bại")
-        else:
-            if(response.json().get('check_sendOTP') == True):
-                raise CCCDException(f"Xác thực thông tin CCCD thất bại, cần nhập OTP")
-        # Lấy căn cước công dân
-        return CCCD(**response.json())
+                response = requests.request("POST", url, headers=self.__headers, data=payload, files=files)
+                if response.status_code != 200:
+                    raise CCCDException(f"Xác thực thông tin CCCD thất bại")
+                else:
+                    if response.json().get('check_sendOTP') == True:
+                        raise CCCDException(f"Xác thực thông tin CCCD thất bại, cần nhập OTP")
+                # Lấy căn cước công dân
+                return CCCD(**response.json())
+        except Exception as e:
+            raise CCCDException(f"Error handling files: {e}")
 
     def get_contactno(self, cccd: CCCD) -> ContractNo:
         url = f"https://api-bcss-uat.vnsky.vn/customer-service/private/api/v1/gen-contract-no?idNo={cccd.id}&activeType=1"

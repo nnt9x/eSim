@@ -132,10 +132,19 @@ if __name__ == "__main__":
                             count -= 1
                             print("Ảnh không hợp lệ, thử bộ hồ sơ khác", e)
                             os.chmod(profile[0], 0o777)
-                            shutil.move(profile[0], "../data/profiles_failed")
+                            # Xoá hồ sơ không hợp lệ
+                            try:
+                                print("Xoá hồ sơ không hợp lệ")
+                                shutil.move(profile[0], "data/profiles_failed")
+                            except Exception as e:
+                                print("Xoá hồ sơ không hợp lệ", e)
                     else:
                         # Email cho admin
-                        shutil.move(profile[0], "../data/profiles_failed")
+                        # GỬI MAIL ADMIN NẾU CÓ LỖI
+                        body_ = f""" Số điện thoại: {phone} và serial: {serial}, lỗi hồ sơ không hợp lệ"""
+                        email_processor.send_email(
+                            os.getenv("ADMIN_MAIL"), "XỬ LÝ LỖI KÍCH HOẠT SIM VNSKY", body_
+                        )
 
                     print("4. Tạo mã khách hàng")
                     customer_no = vnsky_bot.gen_customer_no(cccd)
@@ -158,7 +167,12 @@ if __name__ == "__main__":
                         sim_card=sim_card
                     );
                     email_processor.reply_email(email_data, "Kích hoạt sim thành công!")
-                    shutil.move(profile[0], "../data/profiles_done")
+                    try:
+                        # Di chuyển hồ sơ đã kích hoạt
+                        print("Di chuyển hồ sơ đã kích hoạt")
+                        shutil.move(profile[0], "data/profiles_done")
+                    except Exception as e:
+                        print("Xoá hồ sơ không hợp lệ", e)
                     # Lưu thông tin hồ sơ
                     df.loc[sim.index, "Trạng thái kích hoạt"] = "Đã kích hoạt"
                     df.loc[sim.index, "Mail gửi kích hoạt"] = email_data["from"]
