@@ -1,12 +1,13 @@
 import requests
-from streamlit import header
 from datetime import datetime
 import json
 from signature.signature import create_text_image
 
+
 class CCCDException(Exception):
     def __init__(self, message):
         super().__init__(message)
+
 
 class SimCardException(Exception):
     def __init__(self, message):
@@ -73,7 +74,7 @@ class CCCD:
 
 class VNSKYBot:
 
-    def __init__(self, username:str, password:str):
+    def __init__(self, username: str, password: str):
         self.__username = username
         self.__password = password
         self.__token = None
@@ -189,7 +190,6 @@ class VNSKYBot:
         if response.status_code != 200:
             raise Exception(f"Tạo hợp đồng thất bại")
 
-
     def create_signature(self, cccd: CCCD, contract_no: ContractNo,
                          url="https://api-bcss-uat.vnsky.vn/customer-service/public/api/v1/gen-contract/submit"):
         payload = {'contractNo': contract_no.contractNo}
@@ -247,4 +247,3 @@ class VNSKYBot:
         if response.status_code != 200:
             raise VNSKYActivationException("Kích hoạt sim thất bại!", response.json())
         return response.json()
-
