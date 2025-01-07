@@ -107,17 +107,22 @@ class GmailProcessor:
                     handle_email(email_data)
                     # Hoàn thành tác vụ
                     self.email_queue.task_done()
+                    # Delay 30s để tránh bị chặn
+                    if (email_data['subject'].startswith('vnsky')):
+                        time.sleep(30)
                 else:
                     break
             except Exception as e:
                 print(f"Lỗi khi xử lý email: {e}")
 
     def loop_forever(self, handle_email, time_sleep=15):
+        print("Kiểm tra email...\n")
         while True:
             if self.email_queue.empty():
-                print("Kiểm tra email...")
                 self.read_email()
             if not self.email_queue.empty():
                 print("Xử lý email và kích hoạt sim...")
                 self.process_email(handle_email)
+                print("\nKiểm tra email...")
+
             time.sleep(time_sleep)

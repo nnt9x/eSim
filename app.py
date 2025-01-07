@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from data.data import DataLoader
 from local.bot import LocalBotAuto
 from mailer.gmail import GmailProcessor
-from vnsky.bot import VNSKYBot, CCCDException, SimCardException
+from vnsky.bot import VNSKYBot, CCCDException, SimCardException, VNSKYActivationException
 import re
 
 if __name__ == "__main__":
@@ -66,9 +66,11 @@ if __name__ == "__main__":
             mobile_network, serial = split_string(subject)
             mobile_network = str(mobile_network).upper()
 
-            sim = df[(df["Nhà mạng"].str.upper().str.endswith(mobile_network)) & (df["Serial sim"].str.endswith(serial))]
+            sim = df[
+                (df["Nhà mạng"].str.upper().str.endswith(mobile_network)) & (df["Serial sim"].str.endswith(serial))]
 
             if sim.empty:
+                print("Không tìm thấy sim trong excel!")
                 email_processor.reply_email(
                     email_data, "Số serial và điện thoại không khớp!"
                 )
@@ -82,6 +84,7 @@ if __name__ == "__main__":
 
             # Nếu sim đã kích hoạt
             if sim["Trạng thái kích hoạt"].values[0] == "Đã kích hoạt":
+                print("Sim đã được kích hoạt, vui lòng kiểm tra lại thông tin!")
                 email_processor.reply_email(email_data, "Sim đã được kích hoạt, vui lòng kiểm tra lại thông tin!")
                 return
 
@@ -101,7 +104,7 @@ if __name__ == "__main__":
                         Số Serial: {result[1]}
                         {'Mã QR: ' + result[2] if result[2] is not None else ''}
                     """
-
+                    print("Kích hoạt thành công!")
                     email_processor.reply_email(email_data, body_)
                     # LƯU THÔNG TIN HỒ SƠ VÀO EXCEL
                     df.loc[sim.index, "Trạng thái kích hoạt"] = "Đã kích hoạt"
@@ -183,6 +186,7 @@ if __name__ == "__main__":
                         contact_no=contract_no,
                         sim_card=sim_card
                     );
+                    print("Kích hoạt sim thành công!")
                     email_processor.reply_email(email_data, "Kích hoạt sim thành công!")
                     try:
                         # Di chuyển hồ sơ đã kích hoạt
@@ -203,12 +207,16 @@ if __name__ == "__main__":
 
                 except SimCardException as e:
                     email_processor.reply_email(email_data, "Sim đã kích hoạt hoặc số điện thoại, serial không đúng!")
+
+                except VNSKYActivationException as e:
+                    email_processor.reply_email(email_data, "Kích hoạt thất bại!")
+                    # Gửi thêm cho admin
+                    email_processor.send_email(os.getenv("ADMIN_MAIL"), f"XỬ LÝ LỖI KÍCH HOẠT SIM VNSKY - {email_data['subject']}", e)
                 except Exception as e:
                     print(e)
 
         except Exception as e:
             print(f"Error: {e}")
-
 
     # LOOP FOREVER
     email_processor.loop_forever(handle_email)

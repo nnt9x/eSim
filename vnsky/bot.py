@@ -12,6 +12,12 @@ class SimCardException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
+
+class VNSKYActivationException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class SimCard:
     def __init__(self, isdn=None, serial=None, imsi=None, registerDate=None, pckCode=None, pckName=None, apiCode=None,
                  apiPromCode=None, smsCode=None, smsPromCode=None, profileType=None, activationCode=None, simType=None):
@@ -239,36 +245,6 @@ class VNSKYBot:
         self.__headers.pop('content-type', None)
         response = requests.request("POST", url, headers=self.__headers, data=payload, files=files)
         if response.status_code != 200:
-            raise Exception("Kích hoạt sim thất bại!", response.json())
+            raise VNSKYActivationException("Kích hoạt sim thất bại!", response.json())
         return response.json()
 
-    def activate_subscription(self, phone: str, serial: str, front_image: str, back_image: str, portrait: str) -> bool:
-        print("1. Đăng nhập")
-        self.login()
-        print("2. Check sim")
-        sim_card = self.check_sim(phone, serial)
-        print(sim_card.serial, sim_card.isdn)
-        print("3. Kiểm tra ảnh")
-        cccd = self.check_card_cccd(front_image, back_image, portrait)
-        print("CCCD", cccd.name, cccd.id, cccd.expiry)
-        return
-        print("4. Tạo mã khách hàng")
-        customer_no = self.gen_customer_no(cccd)
-        print(customer_no.customerCode)
-        print("5. Tạo mã hợp đồng")
-        contract_no = self.get_contactno(cccd)
-        print(contract_no.contractNo)
-        print("6. Tạo hợp đồng")
-        self.gen_contract(cccd, customer_no, contract_no, sim_card)
-        print("7. Kí hợp đồng")
-        self.create_signature(cccd=cccd, contract_no=contract_no)
-        print("8. Kích hoạt sim")
-        self.active_contract(
-            card_front=front_image,
-            card_back=back_image,
-            portrait=portrait,
-            cccd=cccd,
-            customer_code=customer_no,
-            contact_no=contract_no,
-            sim_card=sim_card
-        );
