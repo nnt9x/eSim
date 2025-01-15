@@ -29,6 +29,7 @@ class GmailProcessor:
             for email_id in email_ids:
                 # Lấy dữ liệu của email
                 status, msg_data = mail.fetch(email_id, "(RFC822)")
+
                 for response_part in msg_data:
                     if isinstance(response_part, tuple):
                         msg = email.message_from_bytes(response_part[1])
@@ -41,12 +42,34 @@ class GmailProcessor:
                         # Extract email address using regex
                         email_address = re.search(r"<(.+?)>", from_).group(1)
 
+                        # Lấy nội dung text của email
+                        body = ""
+                        if msg.is_multipart():
+                            for part in msg.walk():
+                                content_type = part.get_content_type()
+                                content_disposition = str(part.get("Content-Disposition"))
+                                try:
+                                    body = part.get_payload(decode=True).decode()
+                                except:
+                                    pass
+                                if content_type == "text/plain" and "attachment" not in content_disposition:
+                                    break
+                        else:
+                            body = msg.get_payload(decode=True).decode()
+
+                        _subject = str(subject).strip()
+                        if len(_subject) == 0:
+                            if (len(body) == 0):
+                                continue
+                            else:
+                                _subject = body
+
                         # Chỉ lấy các mail có subject chứa số, gạch ngang, còn lại bỏ qua
-                        if re.match(r"^(vnsky|local)\d+", subject, re.IGNORECASE):
+                        if re.match(r"^(vnsky|local)\d+", _subject, re.IGNORECASE):
                             # Đưa email vào hàng đợi
                             self.email_queue.put(
                                 {
-                                    "subject": str(subject).strip(),
+                                    "subject": _subject,
                                     "from": email_address,
                                     "date": date_,
                                 }
@@ -107,9 +130,9 @@ class GmailProcessor:
                     handle_email(email_data)
                     # Hoàn thành tác vụ
                     self.email_queue.task_done()
-                    # Delay 30s để tránh bị chặn
+                    # Delay 60s để tránh bị chặn
                     if (email_data['subject'].startswith('vnsky')):
-                        time.sleep(30)
+                        time.sleep(60)
                 else:
                     break
             except Exception as e:
