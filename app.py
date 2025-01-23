@@ -148,7 +148,7 @@ if __name__ == "__main__":
                             os.chmod(profile[0], 0o777)
                             cccd = vnsky_bot.check_card_cccd(profile[1], profile[2], profile[3])
                             break
-                        except CCCDException as e:
+                        except Exception as e:
                             count -= 1
                             print("Ảnh không hợp lệ, thử bộ hồ sơ khác", e)
                             os.chmod(profile[0], 0o777)
@@ -158,6 +158,7 @@ if __name__ == "__main__":
                                 shutil.move(profile[0], "data/profiles_failed")
                             except Exception as e:
                                 print("Xoá hồ sơ không hợp lệ", e)
+
                     else:
                         # Email cho admin
                         # GỬI MAIL ADMIN NẾU CÓ LỖI
@@ -165,6 +166,7 @@ if __name__ == "__main__":
                         email_processor.send_email(
                             os.getenv("ADMIN_MAIL"), "XỬ LÝ LỖI KÍCH HOẠT SIM VNSKY", body_
                         )
+                        email_processor.reply_email(email_data, "Kích hoạt thất bại!")
 
                     print("4. Tạo mã khách hàng")
                     customer_no = vnsky_bot.gen_customer_no(cccd)
@@ -213,6 +215,7 @@ if __name__ == "__main__":
                     # Gửi thêm cho admin
                     email_processor.send_email(os.getenv("ADMIN_MAIL"), f"XỬ LÝ LỖI KÍCH HOẠT SIM VNSKY - {email_data['subject']}", e)
                 except Exception as e:
+                    email_processor.reply_email(email_data, "Kích hoạt thất bại!")
                     print(e)
 
         except Exception as e:
