@@ -125,6 +125,9 @@ if __name__ == "__main__":
                     email_processor.send_email(
                         os.getenv("ADMIN_MAIL"), "XỬ LÝ LỖI KÍCH HOẠT SIM LOCAL", body_
                     )
+                    email_processor.reply_email(email_data, "Kích hoạt thất bại!")
+
+                    print("Log Local", e)
 
             elif (str(sim.iloc[0]['Nhà mạng']).upper() == "VNSKY"):
                 print("KÍCH HOẠT CHO NHÀ MẠNG VNSKY")
