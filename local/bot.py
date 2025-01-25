@@ -1,6 +1,7 @@
 import requests
 import json
 
+
 class LocalBase:
     headers = {
         "accept": "application/json, text/plain, */*",
@@ -19,6 +20,7 @@ class LocalBase:
         self.password = password
         self.appcode = appcode
 
+
 class LocalBotAuto(LocalBase):
     # Thuộc tính
     distributor_id = 15870
@@ -30,7 +32,7 @@ class LocalBotAuto(LocalBase):
     order_id = None
 
     def __login(
-        self, url="https://api-digital.asimgroup.vn/auth-twoid-service/v2/login"
+            self, url="https://api-digital.asimgroup.vn/auth-twoid-service/v2/login"
     ):
         payload = json.dumps(
             {
@@ -53,11 +55,10 @@ class LocalBotAuto(LocalBase):
 
         return True
 
-    def __get_sim_info(
-        self,
-        serial_number: str,
-        url="https://api.localshop.vn/lcs-new/api/Provider/check-picked-serial-sim",
-    ):
+    def __get_sim_info(self,
+                       serial_number: str,
+                       url="https://api.localshop.vn/lcs-new/api/Provider/check-picked-serial-sim",
+                       ):
         payload = json.dumps(
             {
                 "distributorId": 15870,  # Fixed
@@ -67,7 +68,9 @@ class LocalBotAuto(LocalBase):
         response = requests.request("POST", url, headers=self.headers, data=payload)
         # Kiểm tra response có status = 200
         if response.status_code != 200:
-            raise Exception("Sim đã kích hoạt hoặc số serial không đúng!")
+            # Lấy messages trong response errorMessage
+            errorMessage = response.json()["errorMessage"]
+            raise Exception(errorMessage)
 
         if response.json()["isSucceeded"]:
             data = response.json()
@@ -79,8 +82,8 @@ class LocalBotAuto(LocalBase):
             self.distributor_name = data["data"]["distributorName"]
 
     def __activate_sim(
-        self,
-        url="https://api.localshop.vn/lcs-new/api/Provider/active-sim-by-enterprise-single",
+            self,
+            url="https://api.localshop.vn/lcs-new/api/Provider/active-sim-by-enterprise-single",
     ):
         payload = json.dumps(
             {
@@ -122,4 +125,3 @@ class LocalBotAuto(LocalBase):
         self.__activate_sim()
         order = self.getOrder(serial_number, self.order_id)
         return order["phoneNumber"], order["serial"], order["linkQrText"]
-

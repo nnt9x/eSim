@@ -123,11 +123,10 @@ if __name__ == "__main__":
                             Số điện thoại: {phone} và serial: {serial}
                         """
                     email_processor.send_email(
-                        os.getenv("ADMIN_MAIL"), "XỬ LÝ LỖI KÍCH HOẠT SIM LOCAL", body_
+                        os.getenv("ADMIN_MAIL"), f"XỬ LÝ LỖI KÍCH HOẠT SIM LOCAL: {e}", body_
                     )
-                    email_processor.reply_email(email_data, "Kích hoạt thất bại!")
-
-                    print("Log Local", e)
+                    email_processor.reply_email(email_data, f"Kích hoạt thất bại! {e}")
+                    print("Log:", e)
 
             elif (str(sim.iloc[0]['Nhà mạng']).upper() == "VNSKY"):
                 print("KÍCH HOẠT CHO NHÀ MẠNG VNSKY")
@@ -211,18 +210,22 @@ if __name__ == "__main__":
                     df.to_excel("data/excel/sim.xlsx", index=False)
 
                 except SimCardException as e:
+                    print(e)
                     email_processor.reply_email(email_data, "Sim đã kích hoạt hoặc số điện thoại, serial không đúng!")
 
                 except VNSKYActivationException as e:
+                    print(e)
                     email_processor.reply_email(email_data, "Kích hoạt thất bại!")
                     # Gửi thêm cho admin
-                    email_processor.send_email(os.getenv("ADMIN_MAIL"), f"XỬ LÝ LỖI KÍCH HOẠT SIM VNSKY - {email_data['subject']}", e)
+                    email_processor.send_email(os.getenv("ADMIN_MAIL"),
+                                               f"XỬ LÝ LỖI KÍCH HOẠT SIM VNSKY - {email_data['subject']}", e)
                 except Exception as e:
                     email_processor.reply_email(email_data, "Kích hoạt thất bại!")
                     print(e)
 
         except Exception as e:
             print(f"Error: {e}")
+
 
     # LOOP FOREVER
     email_processor.loop_forever(handle_email)
