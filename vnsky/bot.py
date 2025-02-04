@@ -245,5 +245,6 @@ class VNSKYBot:
         self.__headers.pop('content-type', None)
         response = requests.request("POST", url, headers=self.__headers, data=payload, files=files)
         if response.status_code != 200:
-            raise VNSKYActivationException("Kích hoạt sim thất bại!", response.json())
+            print("Kích hoạt thấy bại!", "Lỗi: ", response.text)
+            raise VNSKYActivationException("Kích hoạt sim thất bại!")
         return response.json()
