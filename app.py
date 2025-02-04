@@ -114,8 +114,11 @@ if __name__ == "__main__":
                         pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
                     )
                     # Cập nhật SĐT với LOCAL
-                    df.loc[sim.index, "Số điện thoại"] = result[0]
-                    df.to_excel("data/excel/sim.xlsx", index=False)
+                    try:
+                        df.loc[sim.index, "Số điện thoại"] = result[0]
+                        df.to_excel("data/excel/sim.xlsx", index=False)
+                    except:
+                        print("Lỗi: không thể ghi dữ liệu vào file excel")
 
                 except Exception as e:
                     # GỬI MAIL ADMIN NẾU CÓ LỖI
@@ -207,7 +210,10 @@ if __name__ == "__main__":
                         pd.Timestamp.now().strftime("%d/%m/%Y %H:%M:%S")
                     )
                     # Lưu dữ liệu
-                    df.to_excel("data/excel/sim.xlsx", index=False)
+                    try:
+                        df.to_excel("data/excel/sim.xlsx", index=False)
+                    except:
+                        print("Lỗi: không thể ghi dữ liệu vào file excel")
 
                 except SimCardException as e:
                     print(e)

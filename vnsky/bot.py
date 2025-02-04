@@ -126,10 +126,12 @@ class VNSKYBot:
                 self.__headers.pop('content-type', None)
 
                 response = requests.request("POST", url, headers=self.__headers, data=payload, files=files)
+
                 if response.status_code != 200:
+                    print(response.text)
                     raise CCCDException(f"Xác thực thông tin CCCD thất bại")
                 else:
-                    if response.json().get('check_sendOTP') == True:
+                    if response.json().get('check_sendOTP') == True or response.json().get('total_sim') >= 1:
                         raise CCCDException(f"Xác thực thông tin CCCD thất bại, cần nhập OTP")
                 # Lấy căn cước công dân
                 return CCCD(**response.json())
