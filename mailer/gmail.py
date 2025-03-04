@@ -139,7 +139,7 @@ class GmailProcessor:
                     # Hoàn thành tác vụ
                     self.email_queue.task_done()
                     # Delay 60s để tránh bị chặn
-                    time.sleep(60)
+                    time.sleep(90)
                 else:
                     break
             except Exception as e:
