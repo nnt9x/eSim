@@ -102,6 +102,9 @@ class VNSKYBot:
         else:
             raise Exception(f"Đăng nhập thất bại! {response.text}")
 
+
+
+
     def check_sim(self, phone_number: str, serial: str) -> SimCard:
         url = f"https://api-bcss-uat.vnsky.vn/customer-service/private/api/v1/check-sim-active-status?serial={serial}&isdn={phone_number}"
         response = requests.request("GET", url, headers=self.__headers)
